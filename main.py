@@ -66,7 +66,7 @@ def plotcountry(df, country, ax, color = None):
     """
     df = filtercountry(df, country)
     dates, cases = process(df)
-    ax.plot(dates, cases, 'x', color = color,)
+    ax.plot(dates, cases, '-', color = color,)
     return ax
 
 if __name__ == '__main__':
