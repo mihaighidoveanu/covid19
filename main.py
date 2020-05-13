@@ -16,6 +16,8 @@ def getdata(file):
         'popData2018' : 'pop'
         })
     df['date'] = pd.to_datetime(df['date'], format='%d/%m/%Y')
+    countries = ['Netherlands', 'Belgium', 'Italy', 'Sweden', 'Denmark', 'Norway', 'Spain', 'United_Kingdom', 'Germany', 'Romania']
+    df = df[df.country.isin(countries)]
     df = df.sort_values('date')
     return df
 
@@ -69,15 +71,29 @@ def plotcountry(df, country, ax, color = None):
     ax.plot(dates, cases, '-', color = color,)
     return ax
 
+def explore(df):
+    print(len(df))
+    print(df)
+    print(df.country.unique())
+    print(df[df.cases < 0])
+    aggs = df.groupby('country').agg({
+        'cases' : ['mean', 'median', 'min', 'max']
+        })
+    print(aggs)
+
+
 if __name__ == '__main__':
     data = 'data/timeseries.csv'
     df = getdata(data)
-    print(len(df))
-    print(df)
-    fig, ax = plt.subplots()
-    plotcountry(df, 'Romania', ax)
-    plotcountry(df, 'Netherlands', ax)
-    # plotcountry(df, 'Italy', ax, color = 'red')
-    plt.xticks(rotation = 90)
-    plt.axhline(color = 'grey', linestyle = '--')
-    plt.show()
+    toexplore = True
+    if toexplore:
+        explore(df)
+    toplot = False
+    if toplot:
+        fig, ax = plt.subplots()
+        plotcountry(df, 'Romania', ax)
+        plotcountry(df, 'Netherlands', ax)
+        # plotcountry(df, 'Italy', ax, color = 'red')
+        plt.xticks(rotation = 90)
+        plt.axhline(color = 'grey', linestyle = '--')
+        plt.show()
