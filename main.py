@@ -40,11 +40,8 @@ def ratioincrease(x, timelag):
     transforms each element into the ratio increase of it compared to its correspondent in timelag before
     """
     r = []
-    print(x)
-    print(len(x))
     for i in range(timelag, len(x)):
-        ratio = x[i] / x[i - timelag]
-        ratio = ratio - 1
+        ratio = (x[i] - x[i - timelag]) / x[i - timelag]
         r.append(ratio)
 
     r = np.array(r)
@@ -57,8 +54,10 @@ def process(df):
     dates = df['date']
     cases = df['cases'].values
     cases = cases[cases > 0 ]
+    # cases = np.cumsum(cases)
     # use preprocess cases functions here
-    cases = ratioincrease(cases, timelag = 1)
+    # cases = ratioincrease(cases, timelag = 1)
+    # cases = minmax(cases)
 
     return range(len(cases)), cases
 
@@ -75,25 +74,30 @@ def explore(df):
     print(len(df))
     print(df)
     print(df.country.unique())
-    print(df[df.cases < 0])
+    print(filtercountry(df, 'Netherlands'))
     aggs = df.groupby('country').agg({
-        'cases' : ['mean', 'median', 'min', 'max']
+        'cases' : ['mean', 'median', 'min', 'max', 'sum']
         })
+    aggs = aggs.sort_values(('cases', 'sum'))
     print(aggs)
-
 
 if __name__ == '__main__':
     data = 'data/timeseries.csv'
     df = getdata(data)
-    toexplore = True
+    toexplore = False
+    countries = ['Netherlands', 'Belgium', 'Italy', 'Sweden', 'Denmark', 'Norway', 'Spain', 'United_Kingdom', 'Germany', 'Romania']
     if toexplore:
         explore(df)
-    toplot = False
+    toplot = True
     if toplot:
         fig, ax = plt.subplots()
-        plotcountry(df, 'Romania', ax)
-        plotcountry(df, 'Netherlands', ax)
-        # plotcountry(df, 'Italy', ax, color = 'red')
+        c1 = 'Netherlands'
+        c2 = 'Belgium'
+        plotcountry(df, c1, ax, color = 'blue')
+        plotcountry(df, c2, ax, color = 'red')
+        plotcountry(df, 'Italy', ax, color = 'green')
+        # for c in countries:
+        #     plotcountry(df, c, ax)
         plt.xticks(rotation = 90)
         plt.axhline(color = 'grey', linestyle = '--')
         plt.show()
