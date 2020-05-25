@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import pandas as pd
 import numpy as np
+import os
 
 def getdata(file):
     """
@@ -54,7 +55,7 @@ def process(df):
     dates = df['date']
     cases = df['cases'].values
     cases = cases[cases > 0 ]
-    # cases = np.cumsum(cases)
+    cases = np.cumsum(cases)
     # use preprocess cases functions here
     # cases = ratioincrease(cases, timelag = 1)
     # cases = minmax(cases)
@@ -67,7 +68,7 @@ def plotcountry(df, country, ax, color = None):
     """
     df = filtercountry(df, country)
     dates, cases = process(df)
-    ax.plot(dates, cases, '-', color = color,)
+    ax.plot(dates, cases, '-', color = color, label = country)
     return ax
 
 def explore(df):
@@ -81,8 +82,22 @@ def explore(df):
     aggs = aggs.sort_values(('cases', 'sum'))
     print(aggs)
 
+def newimageidx(output_dir):
+    idxfile = os.path.join(output_dir, '.idx')
+    if os.path.exists(idxfile):
+        with open(idxfile, 'r') as f:
+            idx = int(f.read())
+        idx += 1
+    else:
+        idx = 0
+    with open(idxfile, 'w') as f:
+        f.write(str(idx))
+    return idx
+
+
 if __name__ == '__main__':
     data = 'data/timeseries.csv'
+    output_dir = 'output'
     df = getdata(data)
     toexplore = False
     countries = ['Netherlands', 'Belgium', 'Italy', 'Sweden', 'Denmark', 'Norway', 'Spain', 'United_Kingdom', 'Germany', 'Romania']
@@ -91,13 +106,16 @@ if __name__ == '__main__':
     toplot = True
     if toplot:
         fig, ax = plt.subplots()
-        c1 = 'Netherlands'
-        c2 = 'Belgium'
-        plotcountry(df, c1, ax, color = 'blue')
-        plotcountry(df, c2, ax, color = 'red')
-        plotcountry(df, 'Italy', ax, color = 'green')
-        # for c in countries:
-        #     plotcountry(df, c, ax)
-        plt.xticks(rotation = 90)
-        plt.axhline(color = 'grey', linestyle = '--')
+        for c in countries:
+            plotcountry(df, c, ax)
+        # plotcountry(df, 'Netherlands', ax, color = 'blue')
+        # plotcountry(df, 'Belgium', ax, color = 'red')
+        # plotcountry(df, 'Italy', ax, color = 'green')
+        # plotcountry(df, 'Spain', ax, color = 'yellow')
+        plt.legend()
+        plt.xlabel('Days since first positive test')
+        plt.ylabel('Positive tests')
+        plt.title('Positive tests ')
+        idx = newimageidx(output_dir)
+        plt.savefig(f'{output_dir}/out{idx}.png')
         plt.show()
