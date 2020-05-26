@@ -22,12 +22,33 @@ def getdata(file):
     df = df.sort_values('date')
     return df
 
+def getmeasures(file):
+    """
+    load measures data from csv file
+    """
+    df = pd.read_csv(file)
+    df = df.rename(columns = {
+        'Country' : 'date'
+        })
+    df = df.iloc[1:]
+    print(df.date.unique())
+    # df['date'] = pd.to_datetime(df['date'])
+    df['date'] = pd.to_datetime(df['date'], format='%d/%m')
+    return df
+
 def filtercountry(df, country):
     """
     returns the df filtered for a specific country
     """
     mask = df.country.eq(country)
     return df[mask]
+
+def filtermeasures(df, country):
+    """
+    returns the dfmeasures filtered for a specific country
+    """
+    mask = ~df[country].isna()
+    return df[['date', country]][mask]
 
 def minmax(x):
     """
@@ -58,9 +79,10 @@ def process(df):
     cases = np.cumsum(cases)
     # use preprocess cases functions here
     # cases = ratioincrease(cases, timelag = 1)
-    # cases = minmax(cases)
+    cases = minmax(cases)
 
     return range(len(cases)), cases
+
 
 def plotcountry(df, country, ax, color = None):
     """
@@ -72,14 +94,15 @@ def plotcountry(df, country, ax, color = None):
     return ax
 
 def explore(df):
-    print(len(df))
     print(df)
+    print('Total lines ', len(df))
     print(df.country.unique())
-    print(filtercountry(df, 'Netherlands'))
+    print('Total countries ', len(df.country.unique()))
     aggs = df.groupby('country').agg({
         'cases' : ['mean', 'median', 'min', 'max', 'sum']
         })
     aggs = aggs.sort_values(('cases', 'sum'))
+    print('Aggregation ####')
     print(aggs)
 
 def newimageidx(output_dir):
@@ -96,22 +119,28 @@ def newimageidx(output_dir):
 
 
 if __name__ == '__main__':
+    toexplore = True
+    toplot = False
+
     data = 'data/timeseries.csv'
+    measuresdata = 'data/measures_start.csv'
     output_dir = 'output'
-    df = getdata(data)
-    toexplore = False
     countries = ['Netherlands', 'Belgium', 'Italy', 'Sweden', 'Denmark', 'Norway', 'Spain', 'United_Kingdom', 'Germany', 'Romania']
+    ldc = [ 'Italy', 'Spain', 'United_Kingdom', 'Romania']
+
+    sdc = [c for c in countries if c not in ldc]
+    df = getdata(data)
+    mdf = getmeasures(measuresdata)
     if toexplore:
         explore(df)
-    toplot = True
+        print('Measures')
+        # mdf = filtermeasures(mdf, 'Netherlands')
+        print(mdf)
     if toplot:
         fig, ax = plt.subplots()
         for c in countries:
-            plotcountry(df, c, ax)
-        # plotcountry(df, 'Netherlands', ax, color = 'blue')
-        # plotcountry(df, 'Belgium', ax, color = 'red')
-        # plotcountry(df, 'Italy', ax, color = 'green')
-        # plotcountry(df, 'Spain', ax, color = 'yellow')
+            color = 'red' if c in ldc else 'blue'
+            plotcountry(df, c, ax, color = color)
         plt.legend()
         plt.xlabel('Days since first positive test')
         plt.ylabel('Positive tests')
