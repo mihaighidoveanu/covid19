@@ -28,12 +28,12 @@ def getmeasures(file):
     """
     df = pd.read_csv(file)
     df = df.rename(columns = {
-        'Country' : 'date'
+        'Country' : 'date',
+        'UK' : 'United_Kingdom'
         })
     df = df.iloc[1:]
-    print(df.date.unique())
-    # df['date'] = pd.to_datetime(df['date'])
-    df['date'] = pd.to_datetime(df['date'], format='%d/%m')
+    df['date'] = df['date'].apply(lambda s : s + '/2020')
+    df['date'] = pd.to_datetime(df['date'], format='%d/%m/%Y')
     return df
 
 def filtercountry(df, country):
@@ -73,24 +73,36 @@ def process(df):
     """
     return time ticks (days) and cases for a df, after preprocessing them
     """
-    dates = df['date']
+    dates = df['date'].values
     cases = df['cases'].values
+    dates = dates[cases > 0 ]
     cases = cases[cases > 0 ]
     cases = np.cumsum(cases)
     # use preprocess cases functions here
-    # cases = ratioincrease(cases, timelag = 1)
-    cases = minmax(cases)
+    cases = ratioincrease(cases, timelag = 14)
+    # cases = minmax(cases)
 
-    return range(len(cases)), cases
+    return dates, cases
 
+def processmeasures(df):
+    """
+    return dates measures have been applied, after preprocessing them
+    """
+    dates = df.date.values
+    return dates
 
-def plotcountry(df, country, ax, color = None):
+def plotcountry(df, mdf, country, ax, color = None, mcolor = 'red'):
     """
     plot country spread
     """
     df = filtercountry(df, country)
+    mdf = filtermeasures(mdf, country)
     dates, cases = process(df)
-    ax.plot(dates, cases, '-', color = color, label = country)
+    ax.plot(range(len(cases)), cases, '-', color = color, label = country)
+    mdates = processmeasures(mdf)
+    for date in mdates:
+        idx = np.where(dates == date)[0][0]
+        ax.plot(idx, cases[idx], 'x', color = mcolor)
     return ax
 
 def explore(df):
@@ -104,6 +116,9 @@ def explore(df):
     aggs = aggs.sort_values(('cases', 'sum'))
     print('Aggregation ####')
     print(aggs)
+
+def exploremeasures(df):
+    print(df)
 
 def newimageidx(output_dir):
     idxfile = os.path.join(output_dir, '.idx')
@@ -119,8 +134,8 @@ def newimageidx(output_dir):
 
 
 if __name__ == '__main__':
-    toexplore = True
-    toplot = False
+    toexplore = False
+    toplot = True
 
     data = 'data/timeseries.csv'
     measuresdata = 'data/measures_start.csv'
@@ -132,15 +147,16 @@ if __name__ == '__main__':
     df = getdata(data)
     mdf = getmeasures(measuresdata)
     if toexplore:
+        print('Data #######')
         explore(df)
-        print('Measures')
-        # mdf = filtermeasures(mdf, 'Netherlands')
-        print(mdf)
+        print('Measures ###')
+        exploremeasures(mdf)
     if toplot:
         fig, ax = plt.subplots()
         for c in countries:
             color = 'red' if c in ldc else 'blue'
-            plotcountry(df, c, ax, color = color)
+            # color = None
+            plotcountry(df, mdf, c, ax, color = None, mcolor = color)
         plt.legend()
         plt.xlabel('Days since first positive test')
         plt.ylabel('Positive tests')
